@@ -329,7 +329,7 @@ module Ethereum
           transact_proxy.send(:define_method, parent.function_name(fun)) { |*args| parent.transact(fun, *args) }
           transact_and_wait_proxy.send(:define_method, parent.function_name(fun)) { |*args| parent.transact_and_wait(fun, *args) }
         end
-        @call_raw_proxy, @call_proxy, @transact_proxy, @transact_and_wait_proxy, @call_raw_proxy =  call_raw_proxy.new, call_proxy.new, transact_proxy.new, transact_and_wait_proxy.new, call_data_proxy.new
+        @call_raw_proxy, @call_proxy, @transact_proxy, @transact_and_wait_proxy, @call_data_proxy =  call_raw_proxy.new, call_proxy.new, transact_proxy.new, transact_and_wait_proxy.new, call_data_proxy.new
       end
 
       def create_event_proxies
