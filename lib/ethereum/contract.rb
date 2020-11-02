@@ -8,7 +8,7 @@ module Ethereum
     attr_accessor :gas_limit, :gas_price, :nonce
     attr_accessor :code, :name, :abi, :class_object, :sender, :deployment, :client
     attr_accessor :events, :functions, :constructor_inputs
-    attr_accessor :call_raw_proxy, :call_proxy, :transact_proxy, :transact_and_wait_proxy
+    attr_accessor :call_raw_proxy, :call_proxy, :transact_proxy, :transact_and_wait_proxy, :call_data_proxy
     attr_accessor :new_filter_proxy, :get_filter_logs_proxy, :get_filter_change_proxy
 
     def initialize(name, code, abi, client = Ethereum::Singleton.instance)
@@ -184,6 +184,10 @@ module Ethereum
       end
     end
 
+    def call_data(fun, *args)
+      call_args(fun, args)
+    end
+
     def transact(fun, *args)
       if key
         tx = send_raw_transaction(call_payload(fun, args), address)
@@ -252,6 +256,7 @@ module Ethereum
         def_delegators :parent, :estimate, :deploy, :deploy_and_wait
         def_delegators :parent, :address, :address=, :sender, :sender=
         def_delegator :parent, :call_raw_proxy, :call_raw
+        def_delegator :parent, :call_data_proxy, :call_data
         def_delegator :parent, :call_proxy, :call
         def_delegator :parent, :transact_proxy, :transact
         def_delegator :parent, :transact_and_wait_proxy, :transact_and_wait
@@ -316,14 +321,15 @@ module Ethereum
 
       def create_function_proxies
         parent = self
-        call_raw_proxy, call_proxy, transact_proxy, transact_and_wait_proxy = Class.new, Class.new, Class.new, Class.new
+        call_raw_proxy, call_proxy, transact_proxy, transact_and_wait_proxy, call_data_proxy = Class.new, Class.new, Class.new, Class.new, Class.new
         @functions.each do |fun|
           call_raw_proxy.send(:define_method, parent.function_name(fun)) { |*args| parent.call_raw(fun, *args) }
           call_proxy.send(:define_method, parent.function_name(fun)) { |*args| parent.call(fun, *args) }
+          call_data_proxy.send(:define_method, parent.function_name(fun)) { |*args| parent.call_data(fun, *args) }
           transact_proxy.send(:define_method, parent.function_name(fun)) { |*args| parent.transact(fun, *args) }
           transact_and_wait_proxy.send(:define_method, parent.function_name(fun)) { |*args| parent.transact_and_wait(fun, *args) }
         end
-        @call_raw_proxy, @call_proxy, @transact_proxy, @transact_and_wait_proxy =  call_raw_proxy.new, call_proxy.new, transact_proxy.new, transact_and_wait_proxy.new
+        @call_raw_proxy, @call_proxy, @transact_proxy, @transact_and_wait_proxy, @call_raw_proxy =  call_raw_proxy.new, call_proxy.new, transact_proxy.new, transact_and_wait_proxy.new, call_data_proxy.new
       end
 
       def create_event_proxies
