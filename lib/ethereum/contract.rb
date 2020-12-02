@@ -1,6 +1,17 @@
 require 'forwardable'
 
 module Ethereum
+  class FunctionProxy
+    def method_missing(name, *args, &block)
+      fixed_name = "_eth_contract_function_#{name}".to_sym
+      if respond_to?(fixed_name)
+        send(fixed_method, *args, &block)
+      else
+        super
+      end
+    end
+  end
+
   class Contract
 
     attr_reader :address
@@ -21,8 +32,6 @@ module Ethereum
       @sender = client.default_account
       @encoder = Encoder.new
       @decoder = Decoder.new
-      @gas_limit = @client.gas_limit
-      @gas_price = @client.gas_price
     end
 
     # Creates a contract wrapper.
@@ -239,7 +248,11 @@ module Ethereum
     def function_name(fun)
       count = functions.select {|x| x.name == fun.name }.count
       name = (count == 1) ? "#{fun.name.underscore}" : "#{fun.name.underscore}__#{fun.inputs.collect {|x| x.type}.join("__")}"
-      name.to_sym
+      build_function_name(name)
+    end
+
+    def build_function_name(name)
+      "_eth_contract_function_#{name}".to_sym
     end
 
     def build
@@ -321,7 +334,7 @@ module Ethereum
 
       def create_function_proxies
         parent = self
-        call_raw_proxy, call_proxy, transact_proxy, transact_and_wait_proxy, call_data_proxy = Class.new, Class.new, Class.new, Class.new, Class.new
+        call_raw_proxy, call_proxy, transact_proxy, transact_and_wait_proxy, call_data_proxy = Class.new(FunctionProxy), Class.new(FunctionProxy), Class.new(FunctionProxy), Class.new(FunctionProxy), Class.new(FunctionProxy)
         @functions.each do |fun|
           call_raw_proxy.send(:define_method, parent.function_name(fun)) { |*args| parent.call_raw(fun, *args) }
           call_proxy.send(:define_method, parent.function_name(fun)) { |*args| parent.call(fun, *args) }
