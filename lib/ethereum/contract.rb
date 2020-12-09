@@ -5,7 +5,7 @@ module Ethereum
     def method_missing(name, *args, &block)
       fixed_name = "_eth_contract_function_#{name}".to_sym
       if respond_to?(fixed_name)
-        send(fixed_method, *args, &block)
+        send(fixed_name, *args, &block)
       else
         super
       end
@@ -247,7 +247,7 @@ module Ethereum
 
     def function_name(fun)
       count = functions.select {|x| x.name == fun.name }.count
-      name = (count == 1) ? "#{fun.name.underscore}" : "#{fun.name.underscore}__#{fun.inputs.collect {|x| x.type}.join("__")}"
+      name = (count == 1) ? fun.name : "#{fun.name}__#{fun.inputs.collect {|x| x.type}.join("__")}"
       build_function_name(name)
     end
 
